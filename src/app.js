@@ -10,6 +10,21 @@ app.use(cors());
 
 const repositories = [];
 
+function setRepoIndex(req, res, next) {
+  const { id } = req.params;
+  const repoIndex = repositories.findIndex( r => r.id == id );
+
+  if (repoIndex < 0) {
+    return res.status(400).end();
+  }
+
+  res.locals.repoIndex = repoIndex;
+
+  return next();
+}
+
+app.use("/repositories/:id", setRepoIndex);
+
 app.get("/repositories", (request, response) => {
   return response.json(repositories);
 });
@@ -28,17 +43,13 @@ app.put("/repositories/:id", (request, response) => {
   const { id } = request.params;
   const { url, title, techs } = request.body;
 
-  const repositoryIndex = repositories.findIndex( r => r.id == id );
+  const repoIndex = response.locals.repoIndex;
 
-  if (repositoryIndex < 0) {
-    return response.status(400).end();
-  }
-
- const { likes } = repositories[repositoryIndex];
+  const { likes } = repositories[repoIndex];
 
   const newRepository = { id, url, title, techs, likes };
 
-  repositories[repositoryIndex] = newRepository;
+  repositories[repoIndex] = newRepository;
 
   return response.json(newRepository);
 });
@@ -46,13 +57,9 @@ app.put("/repositories/:id", (request, response) => {
 app.delete("/repositories/:id", (req, res) => {
   const { id } = req.params;
 
-  const repositoryIndex = repositories.findIndex( r => r.id == id );
+  const repoIndex = res.locals.repoIndex;
 
-  if (repositoryIndex < 0) {
-    return res.status(400).end();
-  }
-
-  repositories.splice(repositoryIndex, 1);
+  repositories.splice(repoIndex, 1);
 
   return res.status(204).end();
 });
@@ -60,13 +67,9 @@ app.delete("/repositories/:id", (req, res) => {
 app.post("/repositories/:id/like", (request, response) => {
   const { id } = request.params;
 
-  const repositoryIndex = repositories.findIndex( r => r.id == id );
+  const repoIndex = response.locals.repoIndex;
 
-  if (repositoryIndex < 0) {
-    return response.status(400).end();
-  }
-
-  const repo =  repositories[repositoryIndex];
+  const repo =  repositories[repoIndex];
   repo.likes++
 
   return response.json(repo);
